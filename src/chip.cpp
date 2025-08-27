@@ -1,11 +1,5 @@
 #include "chip.hpp"
-#include "raylib.h"
 
-#include <cstdint>
-#include <cstring>
-#include <fstream>
-#include <chrono>
-#include <random>
 
 const uint16_t FONTSET_SIZE = 0x50;
 
@@ -66,6 +60,7 @@ Chip::Chip()
 }
 
 void Chip::LoadROM(char const* filename) {
+	//if (!filename) {return;}
 	std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
 	if (file.is_open()) {
@@ -83,6 +78,27 @@ void Chip::LoadROM(char const* filename) {
 
 		delete[] buf;
 	}
+
+	std::cout << "rom loaded" << std::endl;
+}
+
+void Chip::Cycle() {
+
+	opcode = (memory[pc] << 8u) | memory[pc+1];
+
+	pc += 2;
+
+	//((*this).*(table[(opcode & 0xF000) >> 12u])());
+
+	if (dt > 0) {
+		--dt;
+	}
+
+	if(st > 0) {
+		--st;
+	}
+
+
 }
 
 void Chip::TestDraw() {
@@ -93,15 +109,138 @@ void Chip::TestDraw() {
 	//return colorArray;
 }
 
+
+void Chip::ftable0() {
+	// opcode nibble is 0
+}
+
+void Chip::ftable8() {
+	//opcode nibble is 8
+}
+void Chip::ftableE() {
+	//opcode nibble is E
+}
+void Chip::ftableF() {
+	//opcode nibble is F
+}
+
 //OPCODES
+
+
+void Chip::OP_0NNN() {
+
+}
 
 void Chip::OP_00E0() {
 	memset(video, 0, sizeof(video));
 }
 
+
+
+void Chip::OP_00EE() {
+
+}
+
+
+void Chip::OP_1NNN() {
+
+}
+
+
+void Chip::OP_2NNN() {
+
+}
+
+
+void Chip::OP_3XNN() {
+
+}
+
+
+void Chip::OP_4XNN() {
+
+}
+
+
+void Chip::OP_5XY0() {
+
+}
+
+
+void Chip::OP_6XNN() {
+
+}
+
+
+void Chip::OP_7XNN() {
+
+}
+
+
+void Chip::OP_8XY0() {
+
+}
+
+
+void Chip::OP_8XY1() {
+
+}
+
+
+void Chip::OP_8XY2() {
+
+}
+
+
+void Chip::OP_8XY3() {
+
+}
+
+
+void Chip::OP_8XY4() {
+
+}
+
+
+void Chip::OP_8XY5() {
+
+}
+
+
+void Chip::OP_8XY6() {
+
+}
+
+
+void Chip::OP_8XY7() {
+
+}
+
+
+void Chip::OP_8XYE() {
+
+}
+
+
+void Chip::OP_9XY0() {
+
+}
+
+
 void Chip::OP_ANNN(uint16_t address) {
 	index = address;
 }
+
+
+void Chip::OP_BNNN() {
+
+}
+
+
+void Chip::OP_CXNN() {
+
+}
+
 
 void Chip::OP_DXYN(uint8_t x, uint8_t y, uint8_t numbytes) {
 	
@@ -143,6 +282,57 @@ void Chip::OP_DXYN(uint8_t x, uint8_t y, uint8_t numbytes) {
 
 }
 
+void Chip::OP_EX9E() {
+
+}
+
+
+void Chip::OP_EXA1() {
+
+}
+
+
+void Chip::OP_FX07() {
+
+}
+
+
+void Chip::OP_FX0A() {
+
+}
+
+
+void Chip::OP_FX15() {
+
+}
+
+
+void Chip::OP_FX18() {
+
+}
+
+
+void Chip::OP_FX1E() {
+
+}
+
+
 void Chip::OP_FX29(uint8_t vx) {
 	index = (uint16_t)vx;
 }
+
+
+void Chip::OP_FX33() {
+
+}
+
+
+void Chip::OP_FX55() {
+
+}
+
+
+void Chip::OP_FX65() {
+
+}
+

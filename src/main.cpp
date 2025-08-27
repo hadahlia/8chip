@@ -4,35 +4,29 @@
 #define MAX(a, b) ((a)>(b)? (a) : (b))
 #define MIN(a, b) ((a)<(b)? (a) : (b))
 
-int main(void)
+int main(int argc, char* argv[])
 {
+
+	char const* romName = argv[0];
+
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(800, 450, "um");
+    InitWindow(800, 450, "emul8");
 	SetWindowMinSize(64, 32);
-
-	// const unsigned int gameWidth {64};
-	// const unsigned int gameHeight {32};
-	
-
-	//Color* pixColorArray = new Color[gameWidth * gameHeight]{ 0 };
-
-	//pixColorArray = &colors[0];
 
 
 	SetTargetFPS(60);
 
 	Chip chip;
-
+	//chip.LoadROM(romName);
+	
 
 	for (unsigned int i = 0; i < sizeof(chip.video); ++i) {
 		chip.video[i] = colors[0];
 	}
+	
 
 	chip.TestDraw();
 
-	
-	//pixColorArray = chip.video;
-	//video_sprite_to_color(pixColorArray, chip.video);
 	
 	Image pixelImage = GenImageColor(VIDEO_WIDTH, VIDEO_HEIGHT, colors[0]);
 	ImageFormat(&pixelImage, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
@@ -45,45 +39,37 @@ int main(void)
 	Texture2D pixelTex = LoadTextureFromImage(pixelImage);
 	UnloadImage(pixelImage);
 
-	//RenderTexture2D target = LoadRenderTexture(gameWidth, gameHeight);
-	//target.texture = pixelTex;
-	//RenderTexture2D target = LoadRenderTexture(gameWidth, gameHeight);
-	//RenderTexture2D blip = LoadRenderTexture(1,1);
 	SetTextureFilter(pixelTex, TEXTURE_FILTER_POINT);
+
+	auto prevTime = std::chrono::high_resolution_clock::now();
 
     while (!WindowShouldClose())
     {
+
+		auto curTime = std::chrono::high_resolution_clock::now();
+		float delta = std::chrono::duration<float, std::chrono::milliseconds::period>(curTime - prevTime).count();
+
 		float scale = MIN((float)GetScreenWidth()/VIDEO_WIDTH, (float)GetScreenHeight()/VIDEO_HEIGHT);
-
-		//BeginTextureMode(target);
 		
-			//ClearBackground(colors[0]);
-			//LoadImag
-			//target.texture.format
-			
-			// for (uint32_t i = 0; i < gameWidth*gameHeight; i++) {
-			// 	DrawRectangle(0x01, 0x10, 1, 1, colors[1]);
-			// }
+		if (delta > 16.67) {
+			prevTime = curTime;
 
-		//EndTextureMode();
-		//chip.TestDraw();
+			//chip.Cycle();
 
-		
-
-		
-
-        BeginDrawing();
-			
+			UpdateTexture(pixelTex, chip.video);
+			//std::cout << "60hz" << std::endl;
+		}
+        
+		BeginDrawing();
+				
 			ClearBackground(BLACK);
 			
-			//target.texture.
 			DrawTexturePro(pixelTex, (Rectangle){0.0f, 0.0f, (float)pixelTex.width, (float)-pixelTex.height},
 								(Rectangle){(GetScreenWidth() - ((float)VIDEO_WIDTH*scale))*0.5, (GetScreenHeight() - ((float)VIDEO_HEIGHT*scale))*0.5,
 								(float)VIDEO_WIDTH*scale, (float)VIDEO_HEIGHT*scale}, (Vector2){0, 0}, 0.0f, WHITE);
 			
-			UpdateTexture(pixelTex, chip.video);
-            //DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
-        EndDrawing();
+     	EndDrawing();
+
     }
 	UnloadTexture(pixelTex);
 	//UnloadRenderTexture(target);

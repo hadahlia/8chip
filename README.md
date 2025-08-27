@@ -1,5 +1,4 @@
 
+## used resources
 
-thanks to
-
-https://www.raylib.com/examples/core/loader.html?name=core_window_letterbox
+[technical reference](https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Technical-Reference)
