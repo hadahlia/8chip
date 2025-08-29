@@ -224,7 +224,8 @@ void Chip::OP_00E0() {
 
 
 void Chip::OP_00EE() {
-
+	--sp;
+	pc = stack[sp];
 }
 
 
@@ -234,7 +235,9 @@ void Chip::OP_1NNN() {
 
 
 void Chip::OP_2NNN() {
-
+	stack[sp] = pc;
+	++sp;
+	pc = opcode & 0xFFFu;
 }
 
 
@@ -342,12 +345,10 @@ void Chip::OP_DXYN() {
 	
 	uint8_t x = (opcode & 0xF00u) >> 8u;
 	uint8_t y  = (opcode & 0xF0u) >> 4u;
-	//uint8_t numbytes = opcode & 0xFu;
-
 	uint8_t height = opcode & 0xFu;
 
-	uint8_t xpos = x % VIDEO_WIDTH;
-	uint8_t ypos = y % VIDEO_HEIGHT;
+	uint8_t xpos = registers[x] % VIDEO_WIDTH;
+	uint8_t ypos = registers[y] % VIDEO_HEIGHT;
 	
 	for(unsigned int row = 0; row < height; ++row) {
 		//uint8_t true_row = row / 8;
