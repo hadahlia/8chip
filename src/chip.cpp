@@ -1,8 +1,9 @@
 #include "chip.hpp"
 
 
-const uint16_t FONTSET_SIZE = 0x50;
 
+const uint16_t FONTSET_SIZE = 80;
+const uint16_t FONTSET_START_ADDR = 0x50;
 const uint16_t START_ADDR = 0x200;
 
 uint8_t fontset[FONTSET_SIZE] = {
@@ -30,65 +31,149 @@ uint8_t fontset[FONTSET_SIZE] = {
 // 0 1 0 1 1 0 1 1 /// 0x5A
 // 0 1 1 1 1 1 1 0 /// 0x7E
 // 0 0 1 1 1 1 0 0 /// 0x3C
-uint8_t lilguy[5] = {
-	0x23, 0x67, 0x5A, 0x7E, 0x3C
-};
+// uint8_t lilguy[5] = {
+// 	0x23, 0x67, 0x5A, 0x7E, 0x3C
+// };
 
 Chip::Chip() 
 		: randGen(std::chrono::system_clock::now().time_since_epoch().count())
 {
 
+	// memset(memory, 0, sizeof(memory));
+	// memset(registers, 0, sizeof(registers));
+	// memset(stack, 0, sizeof(stack));
+	// memset(video, 0, sizeof(video));
 	
+	//
+
+	//opcode = 0;
+	// dt = 0;
+	// st = 0;
 	pc = START_ADDR;
+	index = 0;
+
+	
+
+	//std::cout << std::hex << (pc ) << "\n";
 	
 	//fontset into mem
-	for (unsigned int i = 0x0; i < FONTSET_SIZE; ++i) {
+	for (uint16_t i = 0; i < FONTSET_SIZE; ++i) {
 		memory[i]= fontset[i];
 	}
 
 	//lilguy into mem
-	for (unsigned int i = 0x0; i < 0x5; ++i) {
-		memory[START_ADDR+i] = lilguy[i];
-	}
+	// for (unsigned int i = 0x0; i < 0x5; ++i) {
+	// 	memory[START_ADDR+i] = lilguy[i];
+	// }
 	
 
 	//rng handling
 	randByte = std::uniform_int_distribution<uint8_t>(0, 255U);
 
 
+	table[0x0] = &Chip::ftable0; // todo
+	table[0x1] = &Chip::OP_1NNN;
+	table[0x2] = &Chip::OP_2NNN;
+	table[0x3] = &Chip::OP_3XNN;
+	table[0x4] = &Chip::OP_4XNN;
+	table[0x5] = &Chip::OP_5XY0;
+	table[0x6] = &Chip::OP_6XNN;
+	table[0x7] = &Chip::OP_7XNN;
+	table[0x8] = &Chip::ftable8; // todo
+	table[0x9] = &Chip::OP_9XY0;
+	table[0xA] = &Chip::OP_ANNN;
+	table[0xB] = &Chip::OP_BNNN;
+	table[0xC] = &Chip::OP_CXNN;
+	table[0xD] = &Chip::OP_DXYN;
+	table[0xE] = &Chip::ftableE; //todo
+	table[0xF] = &Chip::ftableF; //todo. christ
+
+	table0[0x0] = &Chip::OP_00E0;
+	table0[0xE] = &Chip::OP_00EE;
+	// tableE[0x1] = &Chip::OP_EXA1;
+	// tableE[0xE] = &Chip::OP_EX9E;
+
 	// TestDraw();
 }
 
 void Chip::LoadROM(char const* filename) {
 	//if (!filename) {return;}
-	std::ifstream file(filename, std::ios::binary | std::ios::ate);
+	// std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
-	if (file.is_open()) {
-		std::streampos size = file.tellg();
+	std::ifstream file(filename, std::ios::binary);
 
-		char* buf = new char[size];
+	//if (file.is_open()) {
 
-		file.seekg(0, std::ios::beg);
-		file.read(buf, size);
-		file.close();
+	//std::streampos size = file.tellg();
+	//if (size == 0) { return; }
+	//unsigned char* buf = new unsigned char[size];
 
-		for(long i = 0; i < size; ++i) {
-			memory[START_ADDR+i] = buf[i];
-		}
+	std::vector<uint8_t> buf(std::istreambuf_iterator<char>(file), {});
 
-		delete[] buf;
+	// file.seekg(0, std::ios::beg);
+	// file.read(buf, size);
+	// file.close();
+
+	// uint8_t tmp[buf.size()];
+	// std::copy(buf.begin(), buf.end(), tmp);
+
+	for(uint16_t i = 0; i < buf.size(); ++i) {
+		memory[START_ADDR+i] = buf[i];
+
+		//std::cout << std::hex << memory[START_ADDR+i] << std::endl;
 	}
 
-	std::cout << "rom loaded" << std::endl;
+	//std::cout << std::hex << memory[pc] << std::endl;
+	// for(const uint8_t& i : buf) {
+	// 	// memory[START_ADDR+i] = buf[i];
+	// 	memory[START_ADDR] = i;
+	// 	//std::cout << std::format("{:b}") << buf[i] << std::endl;
+	// }
+
+	buf.clear();
+	buf.shrink_to_fit();
+	//delete[] tmp;
+	
+	//}
+	// std::cout << "memory -> " << std::hex << (0x0000u | (memory[0x200] << 8u) | memory[0x200 + 1]);
+
+
+
+	// std::cout << " pc -> " << std::hex << this->pc << " opcode -> " << this->opcode <<  std::endl;
+
+	// std::cout << "rom loaded" << std::endl;
+
+	//std::cout << std::hex << memory[pc] << std::endl;
 }
 
 void Chip::Cycle() {
+	//problem child
+	
+	opcode = (memory[pc] << 8u) | memory[pc + 1];
 
-	opcode = (memory[pc] << 8u) | memory[pc+1];
+	//std::cout << "memory -> " << (0x0000u | (memory[0x200u] << 8u) | memory[0x200u + 1]);
+	
+	std::cout << "value " << std::hex << ((0x0000 | memory[index]) << 8u | memory[index + 1]) << " at index " << std::hex << index;
 
-	pc += 2;
 
-	//((*this).*(table[(opcode & 0xF000) >> 12u])());
+
+	std::cout << " pc -> " << std::hex << pc << " opcode -> " << opcode <<  std::endl;
+
+	std::cout << " every single register value: ";
+	for (int i = 0; i < 16; ++i) {
+		std::cout << " v" << i << ": " << std::hex << registers[i];
+	}
+	std::cout << std::endl;
+
+	if (pc < 0x1000u) {
+		pc += 2;
+	} else {
+		pc = 0xFFFu; // shwug
+	}
+	
+	
+	((*this).*(table[(opcode & 0xF000u) >> 12u]))();
+
 
 	if (dt > 0) {
 		--dt;
@@ -101,17 +186,18 @@ void Chip::Cycle() {
 
 }
 
-void Chip::TestDraw() {
+//void Chip::TestDraw() {
 	//Chip::OP_FX29()
-	Chip::OP_ANNN(0x200);
-	Chip::OP_DXYN(0x1A, 0x10, 5);
+	// Chip::OP_ANNN(0x200);
+	// Chip::OP_DXYN(0x1A, 0x10, 5);
 
 	//return colorArray;
-}
+//}
 
 
 void Chip::ftable0() {
 	// opcode nibble is 0
+	((*this).*(table0[opcode & 0x000Fu]))();
 }
 
 void Chip::ftable8() {
@@ -143,7 +229,7 @@ void Chip::OP_00EE() {
 
 
 void Chip::OP_1NNN() {
-
+	pc = opcode & 0xFFFu;
 }
 
 
@@ -153,32 +239,40 @@ void Chip::OP_2NNN() {
 
 
 void Chip::OP_3XNN() {
-
+	if (registers[(opcode & 0xF00u) >> 8u] == opcode & 0xFFu) {
+		pc += 2;
+	}
 }
 
 
 void Chip::OP_4XNN() {
-
+	if (registers[(opcode & 0xF00u) >> 8u] != opcode & 0xFFu) {
+		pc += 2;
+	}
 }
 
 
 void Chip::OP_5XY0() {
-
+	if (registers[(opcode & 0xF00) >> 8u] == registers[(opcode & 0xF0) >> 4u]) {
+		pc += 2;
+	}
 }
 
 
 void Chip::OP_6XNN() {
 
+	registers[(opcode & 0xF00u) >> 8u] = opcode & 0xFFu;
+
 }
 
 
 void Chip::OP_7XNN() {
-
+	registers[(opcode & 0xF00u) >> 8u] += opcode & 0xFFu;
 }
 
 
 void Chip::OP_8XY0() {
-
+	registers[(opcode & 0xF00u) >> 8u] = registers[(opcode & 0xF0) >> 4u];
 }
 
 
@@ -223,50 +317,47 @@ void Chip::OP_8XYE() {
 
 
 void Chip::OP_9XY0() {
-
+	if (registers[(opcode & 0xF00u) >> 8u] != registers[(opcode & 0xF0u) >> 4u]) {
+		pc += 2;
+	}
 }
 
 
-void Chip::OP_ANNN(uint16_t address) {
-	index = address;
+void Chip::OP_ANNN() {
+	index = opcode & 0x0FFFu;
 }
 
 
 void Chip::OP_BNNN() {
-
+	pc = (opcode & 0xFFFu) + registers[0];
 }
 
 
 void Chip::OP_CXNN() {
-
+	registers[(opcode & 0xF00u) >> 8u] = randByte(randGen) & (opcode & 0xFFu);
 }
 
 
-void Chip::OP_DXYN(uint8_t x, uint8_t y, uint8_t numbytes) {
+void Chip::OP_DXYN() {
 	
+	uint8_t x = (opcode & 0xF00u) >> 8u;
+	uint8_t y  = (opcode & 0xF0u) >> 4u;
+	//uint8_t numbytes = opcode & 0xFu;
 
-	uint8_t height = numbytes & 0x000Fu;
+	uint8_t height = opcode & 0xFu;
 
 	uint8_t xpos = x % VIDEO_WIDTH;
 	uint8_t ypos = y % VIDEO_HEIGHT;
-	// //for (uint8_t )
-	// for(unsigned int p = 0; p < 64U*42U; ++p) {
-	// 	video[p] = colors[0];
-	// }
 	
-	// video[x+(y)] = colors[1];
-
-	//heres what i want. we can set video[x*y] to what is stored in memory[index]
 	for(unsigned int row = 0; row < height; ++row) {
 		//uint8_t true_row = row / 8;
 		uint8_t spritebyte = memory[index+row];
 		
-	// 	//video[x+((y+row)*64)] = colors[1];
 		for (uint8_t column = 0; column < 8; ++column) {
-			uint8_t spritePixel = spritebyte & (0x80u >> column);
+			//uint8_t spritePixel = spritebyte & (0x80u >> column);
 
 			video[(ypos + row)* VIDEO_WIDTH + (xpos + column)] = colors[1];
-			Color* screenPixel = &video[(ypos + row)* VIDEO_WIDTH + (xpos + column)];
+			//Color* screenPixel = &video[(ypos + row)* VIDEO_WIDTH + (xpos + column)];
 			//spritebyte = spritebyte << column;
 
 			//spritebyte = spritebyte >> 7;

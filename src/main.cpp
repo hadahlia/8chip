@@ -1,13 +1,14 @@
-#include "chip.hpp"
 #include "raylib.h"
+#include "chip.hpp"
+
 
 #define MAX(a, b) ((a)>(b)? (a) : (b))
 #define MIN(a, b) ((a)<(b)? (a) : (b))
 
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
-
-	char const* romName = argv[0];
+	//int cycletime = 16667;
+	char const* romName = argv[1];
 
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(800, 450, "emul8");
@@ -17,15 +18,16 @@ int main(int argc, char* argv[])
 	SetTargetFPS(60);
 
 	Chip chip;
-	//chip.LoadROM(romName);
+	chip.LoadROM(romName);
 	
 
-	for (unsigned int i = 0; i < sizeof(chip.video); ++i) {
-		chip.video[i] = colors[0];
+	for (Color i : chip.video) {
+		i = colors[0];
+		//chip.video[i] = colors[0];
 	}
 	
-
-	chip.TestDraw();
+	
+	//chip.TestDraw();
 
 	
 	Image pixelImage = GenImageColor(VIDEO_WIDTH, VIDEO_HEIGHT, colors[0]);
@@ -51,21 +53,24 @@ int main(int argc, char* argv[])
 
 		float scale = MIN((float)GetScreenWidth()/VIDEO_WIDTH, (float)GetScreenHeight()/VIDEO_HEIGHT);
 		
-		if (delta > 16.67) {
+
+		if (delta > (16.67f * 10.f)) {
 			prevTime = curTime;
-
-			//chip.Cycle();
-
+			
+			chip.Cycle();
+			//std::cout << "update texture!" << std::endl;
 			UpdateTexture(pixelTex, chip.video);
 			//std::cout << "60hz" << std::endl;
 		}
-        
+
+		//std::cout << "delta : " << delta << std::endl;
+		
 		BeginDrawing();
 				
 			ClearBackground(BLACK);
 			
 			DrawTexturePro(pixelTex, (Rectangle){0.0f, 0.0f, (float)pixelTex.width, (float)-pixelTex.height},
-								(Rectangle){(GetScreenWidth() - ((float)VIDEO_WIDTH*scale))*0.5, (GetScreenHeight() - ((float)VIDEO_HEIGHT*scale))*0.5,
+								(Rectangle){((float)GetScreenWidth() - ((float)VIDEO_WIDTH*scale))*0.5, ((float)GetScreenHeight() - ((float)VIDEO_HEIGHT*scale))*0.5,
 								(float)VIDEO_WIDTH*scale, (float)VIDEO_HEIGHT*scale}, (Vector2){0, 0}, 0.0f, WHITE);
 			
      	EndDrawing();
@@ -77,11 +82,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
-// void video_sprite_to_color(Color* array, uint32_t video[]) {
-// 	for (unsigned int i = 0; i < sizeof(video); ++i) {
-
-// 		//array[i] 
-// 	}
-	
-// }

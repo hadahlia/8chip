@@ -3,15 +3,17 @@
 #include "raylib.h"
 #include <cstdint>
 #include <random>
-#include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <iterator>
 #include <iostream>
 #include <chrono>
 #include <random>
 
-const unsigned int VIDEO_WIDTH = 64;
-const unsigned int VIDEO_HEIGHT = 32;
+const unsigned int MEM_SIZE = 4096;
+const unsigned int REG_NUM = 16;
+const uint16_t VIDEO_WIDTH = 64;
+const uint16_t VIDEO_HEIGHT = 32;
 
 //default colors
 // const Color colors[2]{9, 17, 64, 0xFF
@@ -22,9 +24,10 @@ const Color colors[2]{0x29, 0x2b, 0x30, 0xFF
 class Chip {
 public:
 	Chip();
-	void LoadROM(char const* filename);
 	void Cycle();
-	void TestDraw();
+	void LoadROM(char const* filename);
+	
+	//void TestDraw();
 
 	uint8_t key[16]{};
 
@@ -57,12 +60,12 @@ private:
 	void OP_8XYE();
 	void OP_9XY0();
 
-	void OP_ANNN(uint16_t address);
+	void OP_ANNN();
 
 	void OP_BNNN();
 	void OP_CXNN();
 
-	void OP_DXYN(uint8_t x, uint8_t y, uint8_t numbytes); //draw sprite at vx, vy stored in I
+	void OP_DXYN(); //draw sprite at vx, vy stored in I
 
 	void OP_EX9E();
 	void OP_EXA1();
@@ -79,9 +82,11 @@ private:
 	void OP_FX65();
 
 	//4096 bytes of memory 0x000 - 0xfff
-	uint8_t memory[4096]{};
+	uint8_t memory[MEM_SIZE]{};
 	//16 general 8-bit registers. VF is a carry flag
-	uint8_t registers[16]{};
+	uint8_t registers[REG_NUM]{};
+	//stack
+	uint16_t stack[16]{};
 	//DT 8b
 	uint8_t dt{};
 	//ST 8b
@@ -90,15 +95,13 @@ private:
 	uint16_t index{};
 	//PC 16bit
 	uint16_t pc{};
-	//stack
-	uint16_t stack[16]{};
+	
 	//SP 8 or 16??
 	uint8_t sp{};
-	
 	uint16_t opcode{};
 
 	std::default_random_engine randGen;
-	std::uniform_int_distribution<unsigned char> randByte;
+	std::uniform_int_distribution<uint8_t> randByte;
 
 
 	typedef void (Chip::*PtrTable)();
